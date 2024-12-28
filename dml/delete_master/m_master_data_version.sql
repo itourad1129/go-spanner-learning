@@ -1,0 +1,1 @@
+delete from m_master_data_version where true;

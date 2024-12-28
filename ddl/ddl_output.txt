@@ -1,0 +1,52 @@
+CREATE SEQUENCE user_id_sequence BIT_REVERSED_POSITIVE START COUNTER WITH 1;
+CREATE SEQUENCE user_platform_id_sequence BIT_REVERSED_POSITIVE START COUNTER WITH 1;
+
+CREATE TABLE t_user_info (
+  user_id bigint DEFAULT nextval('user_id_sequence'::text) NOT NULL,
+  name character varying,
+  created_at spanner.commit_timestamp,
+  updated_at spanner.commit_timestamp,
+  PRIMARY KEY(user_id)
+);
+
+CREATE TABLE t_user_login (
+  user_id bigint NOT NULL,
+  last_login spanner.commit_timestamp,
+  total_login_days bigint NOT NULL,
+  PRIMARY KEY(user_id)
+) INTERLEAVE IN PARENT t_user_info ON DELETE CASCADE;
+
+CREATE TABLE t_user_platform (
+  user_id bigint NOT NULL,
+  user_platform_id bigint DEFAULT nextval('user_platform_id_sequence'::text) NOT NULL,
+  platform_type bigint NOT NULL,
+  app_uuid character varying(36) NOT NULL,
+  PRIMARY KEY(user_id, user_platform_id)
+) INTERLEAVE IN PARENT t_user_info ON DELETE CASCADE;
+
+CREATE TABLE t_user_transfer (
+  user_id bigint NOT NULL,
+  transfer_code character varying(36) DEFAULT spanner.generate_uuid() NOT NULL,
+  created_at spanner.commit_timestamp NOT NULL,
+  transferred_at spanner.commit_timestamp,
+  PRIMARY KEY(user_id, transfer_code)
+) INTERLEAVE IN PARENT t_user_info ON DELETE CASCADE;
+
+CREATE TABLE m_chunk_version (
+  version_id bigint NOT NULL,
+  platform_type bigint NOT NULL,
+  deployment_name character varying,
+  content_build_id character varying,
+  PRIMARY KEY(version_id)
+);
+
+CREATE TABLE m_master_data_version (
+  master_data_id bigint NOT NULL,
+  version bigint NOT NULL,
+  chunk_id bigint NOT NULL,
+  PRIMARY KEY(master_data_id)
+);
+
+CREATE INDEX idx_version_id_platform_type_desc
+ON m_chunk_version(platform_type, version_id DESC);
+

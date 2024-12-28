@@ -1,0 +1,1 @@
+delete from t_user_info where true;
